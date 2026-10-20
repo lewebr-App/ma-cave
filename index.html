@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ECEEEC" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#161A19" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ma cave">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Ma Cave à vins</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout : appli une colonne, en-tête collant, barre d'onglets fixe en bas, fiches en panneau glissant. */
+:root {
+  --stone: #ECEEEC;      /* fond, pierre de cave froide */
+  --card: #F9FAF8;
+  --ink: #1D2321;
+  --muted: #5E6763;
+  --line: #D3D8D5;
+  --wine: #7B1E35;       /* accent bordeaux */
+  --wine-soft: #F1DDE2;
+  --chalk: #FFFFFF;
+  --rouge: #8A2033; --blanc: #D8C46A; --rose: #E4919E; --jaune: #C9922B;
+  --ok: #2F7D4F; --ok-soft: #DCEFE2;
+  --warn: #A3620A; --warn-soft: #F6E7CF;
+  --bad: #A8322D; --bad-soft: #F5DCDA;
+  --info: #2D5F8A; --info-soft: #DCE7F1;
+  --none: #6B716E; --none-soft: #E3E5E3;
+  --f-display: "Young Serif", Georgia, "Times New Roman", serif;
+  --f-body: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --nav-h: 64px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --stone: #161A19; --card: #1F2422; --ink: #E7EAE8; --muted: #9AA39F; --line: #333A37;
+  --wine: #E07A90; --wine-soft: #3D1E26; --chalk: #252B29;
+  --rouge: #C2455B; --blanc: #E2CF79; --rose: #EBA2AE; --jaune: #D9A646;
+  --ok: #6CC290; --ok-soft: #1E3326; --warn: #E3A74B; --warn-soft: #3A2C17;
+  --bad: #EC8079; --bad-soft: #3D1F1D; --info: #85B4DE; --info-soft: #1C2B38;
+  --none: #A3AAA6; --none-soft: #2A302D; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --stone: #161A19; --card: #1F2422; --ink: #E7EAE8; --muted: #9AA39F; --line: #333A37;
+  --wine: #E07A90; --wine-soft: #3D1E26; --chalk: #252B29;
+  --rouge: #C2455B; --blanc: #E2CF79; --rose: #EBA2AE; --jaune: #D9A646;
+  --ok: #6CC290; --ok-soft: #1E3326; --warn: #E3A74B; --warn-soft: #3A2C17;
+  --bad: #EC8079; --bad-soft: #3D1F1D; --info: #85B4DE; --info-soft: #1C2B38;
+  --none: #A3AAA6; --none-soft: #2A302D; color-scheme: dark }
+
+* { box-sizing: border-box }
+html, body { height: 100% }
+body { background: var(--stone); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; -webkit-tap-highlight-color: transparent }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--stone) }
+button, input, select, textarea { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--wine); outline-offset: 2px }
+.num { font-variant-numeric: tabular-nums }
+
+.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+header.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--stone); border-bottom: 1px solid var(--line) }
+header.top .wrap { padding-block: 14px 12px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px }
+h1 { font-family: var(--f-display); font-weight: 400; font-size: 24px; margin: 0; letter-spacing: -0.01em }
+.stats { color: var(--muted); font-size: 13px; text-align: right }
+.stats b { color: var(--ink); font-weight: 600 }
+main { padding-block: 14px calc(var(--nav-h) + 90px + env(safe-area-inset-bottom, 0px)) }
+h2 { font-family: var(--f-display); font-weight: 400; font-size: 19px; margin: 18px 0 8px; text-wrap: balance }
+.eyebrow { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600 }
+
+/* Recherche et filtres */
+.search { display: flex; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; height: 44px }
+.search input { border: 0; background: transparent; flex: 1; min-width: 0; height: 100%; outline: none; font-size: 16px }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding: 10px 0 4px; scrollbar-width: none }
+.chips::-webkit-scrollbar { display: none }
+.chip { flex: none; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--stone); border-color: var(--ink) }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.12) }
+.c-Rouge { background: var(--rouge) } .c-Blanc { background: var(--blanc) } .c-Rosé { background: var(--rose) } .c-Jaune { background: var(--jaune) } .c-x { background: var(--none) }
+
+/* Liste des vins */
+.list { display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line); border-radius: 14px; overflow: hidden }
+.row { display: grid; grid-template-columns: 40px 1fr auto; gap: 12px; align-items: center; padding: 11px 12px; border: 0; border-bottom: 1px solid var(--line); background: transparent; text-align: left; width: 100% }
+.row:last-child { border-bottom: 0 }
+.row:active { background: var(--stone) }
+.thumb { width: 40px; height: 52px; border-radius: 8px; background: var(--stone); display: grid; place-items: center; overflow: hidden }
+.thumb img { width: 100%; height: 100%; object-fit: cover }
+.row .main { min-width: 0 }
+.row .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .sub { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.row .meta { display: flex; gap: 6px; align-items: center; margin-top: 4px; flex-wrap: wrap }
+.row .right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px }
+.qty { font-family: var(--f-display); font-size: 22px; line-height: 1 }
+.qty small { font-family: var(--f-body); font-size: 12px; color: var(--muted); margin-left: 1px }
+.qty.zero { color: var(--muted) }
+.tag { font-family: var(--f-mono); font-size: 11px; letter-spacing: .02em; padding: 2px 6px; border-radius: 5px; background: var(--stone); border: 1px dashed var(--line); color: var(--ink); white-space: nowrap }
+.tag.missing { color: var(--muted) }
+.pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap }
+.p-garde { background: var(--info-soft); color: var(--info) }
+.p-apogee { background: var(--ok-soft); color: var(--ok) }
+.p-urgent { background: var(--warn-soft); color: var(--warn) }
+.p-declin { background: var(--bad-soft); color: var(--bad) }
+.p-inconnu { background: var(--none-soft); color: var(--none) }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); background: var(--card); border: 1px dashed var(--line); border-radius: 14px }
+.empty strong { display: block; color: var(--ink); font-family: var(--f-display); font-weight: 400; font-size: 18px; margin-bottom: 4px }
+
+/* Plan de la cave */
+.seg { display: inline-flex; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 3px }
+.seg button { border: 0; background: transparent; padding: 6px 14px; border-radius: 7px; font-size: 14px }
+.seg button[aria-pressed="true"] { background: var(--wine); color: var(--chalk) }
+.plan-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0 10px }
+.rack { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; overflow-x: auto }
+.rack-grid { display: grid; grid-template-columns: 34px repeat(var(--cols), minmax(44px, 1fr)); gap: 6px; min-width: 320px }
+.rack-lbl { font-family: var(--f-mono); font-size: 11px; color: var(--muted); display: grid; place-items: center }
+.cell { aspect-ratio: 1 / 1.05; border-radius: 10px; border: 1px dashed var(--line); background: var(--stone); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 4px 2px; min-width: 0; max-width: 100% }
+.cell.full { border-style: solid; background: var(--wine-soft); border-color: transparent }
+.cell .n { font-family: var(--f-display); font-size: 18px; line-height: 1 }
+.cell .ap { font-size: 9.5px; color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px }
+.cell .dots { display: flex; gap: 2px }
+.cell .dots .dot { width: 6px; height: 6px }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 10px }
+.unplaced { margin-top: 14px }
+
+/* Sections À boire */
+.bucket { margin-top: 6px }
+.bucket-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 18px 0 8px }
+.bucket-h h2 { margin: 0 }
+.bucket-h .count { color: var(--muted); font-size: 13px }
+
+/* Journal */
+.mv { display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--line) }
+.mv:last-child { border-bottom: 0 }
+.mv .sign { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 600 }
+.mv .sign.in { background: var(--ok-soft); color: var(--ok) }
+.mv .sign.out { background: var(--wine-soft); color: var(--wine) }
+.mv .d { color: var(--muted); font-size: 12px; text-align: right }
+.mv .t { min-width: 0 }
+.mv .t div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 4px }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px }
+.tile .v { font-family: var(--f-display); font-size: 22px }
+.tile .l { font-size: 12px; color: var(--muted) }
+
+/* Boutons */
+.btn { border: 1px solid var(--line); background: var(--card); border-radius: 10px; padding: 10px 14px; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 6px }
+.btn.primary { background: var(--wine); color: var(--chalk); border-color: var(--wine) }
+.btn.danger { color: var(--bad); border-color: var(--bad-soft) }
+.btn:disabled { opacity: .5; cursor: default }
+.fab { position: fixed; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 4px); bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px)); z-index: 25; width: 56px; height: 56px; border-radius: 18px; border: 0; background: var(--wine); color: var(--chalk); font-size: 28px; line-height: 1; box-shadow: 0 6px 20px rgba(0,0,0,.22) }
+
+/* Barre d'onglets */
+nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--card); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px) }
+nav.tabs .in { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); height: var(--nav-h) }
+nav.tabs button { border: 0; background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 11.5px; color: var(--muted) }
+nav.tabs button svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round }
+nav.tabs button[aria-current="page"] { color: var(--wine); font-weight: 600 }
+
+/* Panneau (fiche, formulaire) */
+.scrim { position: fixed; inset: 0; z-index: 40; background: rgba(10,12,11,.45); display: flex; align-items: flex-end; justify-content: center }
+.sheet { background: var(--card); width: 100%; max-width: 640px; max-height: calc(100% - 28px - env(safe-area-inset-top, 0px)); border-radius: 20px 20px 0 0; display: flex; flex-direction: column; animation: up .22s ease-out }
+@keyframes up { from { transform: translateY(24px); opacity: .6 } to { transform: none; opacity: 1 } }
+@media (prefers-reduced-motion: reduce) { .sheet { animation: none } }
+.sheet-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); border-bottom: 1px solid var(--line) }
+.sheet-h h3 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 19px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.x { border: 0; background: var(--stone); width: 34px; height: 34px; border-radius: 50%; font-size: 18px; flex: none }
+.sheet-b { overflow-y: auto; padding: 14px max(16px, env(safe-area-inset-right, 0px)) calc(20px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) }
+.hero { display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: start }
+.hero .thumb { width: 84px; height: 110px; border-radius: 12px }
+.hero .title { font-family: var(--f-display); font-size: 22px; line-height: 1.15; text-wrap: balance }
+.hero .sub { color: var(--muted); margin-top: 2px }
+.hero .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px }
+.loc { margin-top: 14px; display: flex; align-items: center; gap: 10px; padding: 12px; border-radius: 12px; background: var(--stone); border: 1px dashed var(--line) }
+.loc .code { font-family: var(--f-mono); font-size: 15px }
+.stockbar { margin-top: 12px; display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; padding: 12px; border-radius: 12px; border: 1px solid var(--line) }
+.stockbar .qty { font-size: 30px }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin-top: 14px; font-size: 14px }
+.kv dt { color: var(--muted) }
+.kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere }
+.window { margin-top: 14px; padding: 12px; border-radius: 12px; border: 1px solid var(--line) }
+.window .bar { position: relative; height: 8px; border-radius: 4px; background: var(--stone); margin: 18px 0 6px }
+.window .fill { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--ok) }
+.window .now { position: absolute; top: -5px; width: 2px; height: 18px; background: var(--ink) }
+.window .scale { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: 11px; color: var(--muted) }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px }
+.mvform { margin-top: 10px; padding: 12px; border-radius: 12px; background: var(--stone); display: grid; gap: 10px }
+.stepper { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; background: var(--card) }
+.stepper button { border: 0; background: transparent; width: 40px; height: 40px; font-size: 20px }
+.stepper span { min-width: 30px; text-align: center; font-weight: 600 }
+
+/* Formulaire */
+form.f { display: grid; gap: 12px }
+.f .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.f .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px }
+.f label { display: grid; gap: 4px; font-size: 12px; color: var(--muted); font-weight: 600; min-width: 0 }
+.f input, .f select, .f textarea { width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--stone); border-radius: 9px; padding: 9px 10px; font-size: 16px; font-weight: 400; color: var(--ink) }
+.f fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 12px; display: grid; gap: 10px; margin: 0; min-width: 0 }
+.f legend { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 4px }
+.f .hint { font-size: 12px; color: var(--muted); font-weight: 400 }
+.confirm { padding: 12px; border-radius: 12px; background: var(--bad-soft); color: var(--bad); display: grid; gap: 8px; margin-top: 10px }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 86px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--stone); padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px) }
+.notice { margin-bottom: 12px; padding: 10px 12px; border-radius: 10px; background: var(--info-soft); color: var(--info); font-size: 13px }
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <h1>Ma cave</h1>
+  <div class="stats num" id="stats">Chargement…</div>
+</div></header>
+
+<main class="wrap" id="main"></main>
+
+<button class="fab" id="fab" aria-label="Ajouter un vin" hidden>+</button>
+
+<nav class="tabs" aria-label="Sections"><div class="in">
+  <button data-view="liste" aria-current="page"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v4.5c0 1-2.5 2.5-2.5 5.5v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1v-7c0-3-2.5-4.5-2.5-5.5V3"/><path d="M7.5 14h9"/></svg>Bouteilles</button>
+  <button data-view="plan"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.3h18M3 14.6h18M9 4v16M15 4v16"/></svg>Plan</button>
+  <button data-view="boire"><svg viewBox="0 0 24 24"><path d="M7 3h10l-1 7a4 4 0 0 1-8 0L7 3z"/><path d="M12 14v6M8.5 21h7"/></svg>À boire</button>
+  <button data-view="journal"><svg viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h7M9 14h7M9 18h4"/></svg>Journal</button>
+</div></nav>
+
+<div id="sheet-root"></div>
+
+<script src="vendor/supabase.js"></script>
+<script src="config.js"></script>
+<script src="remote.js"></script>
+<script>
+(function () {
+  "use strict";
+  var DEFAULT_CFG = { zones: [{ nom: "Haut", etages: 3 }, { nom: "Milieu", etages: 4 }, { nom: "Intermédiaire", etages: 4 }, { nom: "Bas", etages: 4 }], positions: ["Avant", "Arrière"], casiers: 6 };
+  var COULEURS = ["Rouge", "Blanc", "Rosé", "Jaune"];
+  var FORMATS = ["37cl", "75cl", "1l", "150cl"];
+  var MOTIFS_IN = ["Achat", "Cadeau reçu", "Retour", "Correction d'inventaire"];
+  var MOTIFS_OUT = ["Dégustation", "Repas", "Cadeau offert", "Vendue", "Cassée ou bouchonnée", "Correction d'inventaire"];
+  var PHASES = ["Élevage", "Jeunesse", "Maturité", "Apogée", "Déclin", "Indéterminé"];
+
+  var S = { vins: [], mvts: [], cfg: DEFAULT_CFG, loaded: false, db: null, assets: null, downloads: null, canWrite: true,
+            view: "liste", q: "", couleur: null, phase: null, stockOnly: true, zone: "Bas", pos: "Avant" };
+  try { var saved = JSON.parse(localStorage.getItem("cave-ui") || "{}"); if (saved.view) S.view = saved.view; if (saved.zone) S.zone = saved.zone; if (saved.pos) S.pos = saved.pos; } catch (e) {}
+  function remember() { try { localStorage.setItem("cave-ui", JSON.stringify({ view: S.view, zone: S.zone, pos: S.pos })); } catch (e) {} }
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  function esc(v) { return String(v == null ? "" : v).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function eur(n) { return (Math.round(n * 100) / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: n % 1 ? 2 : 0 }); }
+  function nom(v) { return v.domaine || v.appellation || "Vin sans nom"; }
+  function sousTitre(v) { return [v.domaine ? v.appellation : null, v.cuvee, v.millesime].filter(Boolean).join(" · "); }
+  function couleurDot(v) { return '<span class="dot ' + (COULEURS.indexOf(v.couleur) >= 0 ? "c-" + v.couleur : "c-x") + '" title="' + esc(v.couleur || "Couleur ?") + '"></span>'; }
+  function zoneAbbr(z) { return ({ "Haut": "HAUT", "Milieu": "MIL", "Intermédiaire": "INT", "Bas": "BAS" })[z] || (z || "").toUpperCase().slice(0, 4); }
+  function locCode(v) {
+    if (!v.zone) return null;
+    var p = [zoneAbbr(v.zone)];
+    if (v.position) p.push(v.position === "Avant" ? "AV" : v.position === "Arrière" ? "AR" : v.position);
+    p.push(v.etage ? "É" + v.etage : "É?"); p.push(v.casier ? "C" + v.casier : "C?");
+    return p.join("·");
+  }
+  function locTag(v) { var c = locCode(v); return c ? '<span class="tag">' + esc(c) + "</span>" : '<span class="tag missing">à ranger</span>'; }
+  function locLong(v) {
+    if (!v.zone) return "Emplacement non renseigné";
+    return "Zone " + v.zone + (v.position ? ", " + v.position.toLowerCase() : "") + (v.etage ? ", étage " + v.etage : ", étage à préciser") + (v.casier ? ", casier " + v.casier : ", casier à préciser");
+  }
+
+  // Maturité : la fenêtre « à boire de… à… » prime, sinon la phase saisie.
+  function maturite(v) {
+    var y = new Date().getFullYear();
+    if (v.boireDe || v.boireJusqu) {
+      var de = v.boireDe || -Infinity, a = v.boireJusqu || Infinity;
+      if (y < de) return { k: "garde", l: "En garde", d: "À boire à partir de " + de };
+      if (y > a) return { k: "declin", l: "Passé", d: "Fenêtre close depuis " + a };
+      if (a - y <= 1) return { k: "urgent", l: "À boire vite", d: "À boire avant fin " + a };
+      return { k: "apogee", l: "À boire", d: "À boire jusqu'en " + a };
+    }
+    var p = (v.phase || "").toLowerCase();
+    if (p === "déclin") return { k: "declin", l: "Déclin", d: "Phase saisie : déclin" };
+    if (p === "apogée") return { k: "apogee", l: "Apogée", d: "Phase saisie : apogée" };
+    if (p === "maturité") return { k: "apogee", l: "Maturité", d: "Phase saisie : maturité" };
+    if (p === "elevage" || p === "élevage" || p === "jeunesse") return { k: "garde", l: v.phase.replace("Elevage", "Élevage"), d: "Phase saisie : " + v.phase.toLowerCase() };
+    return { k: "inconnu", l: "À évaluer", d: "Renseignez la fenêtre de consommation" };
+  }
+  // Estimation proposée par Claude, en attente de validation.
+  function hasEst(v) { return !!(v.estimation && v.estimation.de && !(v.boireDe || v.boireJusqu)); }
+  function estTag(v) { return hasEst(v) ? '<span class="tag" title="Estimation à valider">≈ ' + v.estimation.de + "–" + v.estimation.a + "</span>" : ""; }
+  function sansEst(v) { var d = {}; Object.keys(v).forEach(function (k) { if (k !== "id" && k !== "estimation") d[k] = v[k]; }); d.maj = new Date().toISOString(); return d; }
+  function accepter(v) { var d = sansEst(v); d.boireDe = v.estimation.de; d.boireJusqu = v.estimation.a; return S.db.doc("vins/" + v.id).set(d); }
+  function ignorer(v) { return S.db.doc("vins/" + v.id).set(sansEst(v)); }
+  function pill(v) { var m = maturite(v); return '<span class="pill p-' + m.k + '">' + esc(m.l) + "</span>"; }
+  function thumb(v, big) { return '<div class="thumb">' + (v.photo ? '<img alt="" loading="lazy" src="' + esc(v.photo) + '">' : '<svg viewBox="0 0 24 24" width="' + (big ? 34 : 20) + '" height="' + (big ? 34 : 20) + '" fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--muted)"><path d="M10 2h4v5c0 1 3 2.5 3 6v8a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-8c0-3.5 3-5 3-6z"/></svg>') + "</div>"; }
+
+  function toast(msg) { var t = document.createElement("div"); t.className = "toast"; t.textContent = msg; document.body.appendChild(t); setTimeout(function () { t.remove(); }, 2600); }
+
+  /* ---------- Rendu ---------- */
+  function renderStats() {
+    if (!S.loaded) return;
+    var b = 0, val = 0, refs = 0;
+    S.vins.forEach(function (v) { var s = v.stock || 0; b += s; if (s > 0) refs++; val += s * (v.prixMarche || 0); });
+    $("#stats").innerHTML = "<b>" + b + "</b> bouteilles · " + refs + " vins" + (val ? "<br>" + eur(val) + " estimés" : "");
+  }
+
+  function sortVins(a) { return a.slice().sort(function (x, y) { return (x.millesime || 9999) - (y.millesime || 9999) || nom(x).localeCompare(nom(y), "fr"); }); }
+
+  function rowHtml(v) {
+    var s = v.stock || 0;
+    return '<button class="row" data-open="' + esc(v.id) + '">' + thumb(v) +
+      '<div class="main"><div class="name">' + esc(nom(v)) + '</div><div class="sub">' + esc(sousTitre(v) || v.region || "") + '</div>' +
+      '<div class="meta">' + couleurDot(v) + pill(v) + estTag(v) + "</div></div>" +
+      '<div class="right"><div class="qty num' + (s ? "" : " zero") + '">' + s + "<small>bt</small></div>" + locTag(v) + "</div></button>";
+  }
+
+  function viewListe() {
+    var q = S.q.trim().toLowerCase();
+    var vins = S.vins.filter(function (v) {
+      if (S.stockOnly && !(v.stock > 0)) return false;
+      if (S.couleur && v.couleur !== S.couleur) return false;
+      if (S.phase && maturite(v).k !== S.phase) return false;
+      if (q) { var hay = [v.domaine, v.appellation, v.cuvee, v.region, v.sousRegion, v.classification, v.millesime, v.cepage, locCode(v)].join(" ").toLowerCase(); if (hay.indexOf(q) < 0) return false; }
+      return true;
+    });
+    var phases = [["apogee", "À boire"], ["urgent", "À boire vite"], ["declin", "Déclin"], ["garde", "En garde"], ["inconnu", "À évaluer"]];
+    var h = '<div class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--muted)"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
+      '<input id="q" type="search" placeholder="Domaine, appellation, millésime, casier…" value="' + esc(S.q) + '" autocomplete="off"></div>';
+    h += '<div class="chips" role="group" aria-label="Filtres">';
+    h += '<button class="chip" data-f="stock" aria-pressed="' + S.stockOnly + '">En stock</button>';
+    COULEURS.forEach(function (c) { if (S.vins.some(function (v) { return v.couleur === c; })) h += '<button class="chip" data-f="couleur" data-v="' + c + '" aria-pressed="' + (S.couleur === c) + '"><span class="dot c-' + c + '"></span>' + c + "</button>"; });
+    phases.forEach(function (p) { h += '<button class="chip" data-f="phase" data-v="' + p[0] + '" aria-pressed="' + (S.phase === p[0]) + '">' + p[1] + "</button>"; });
+    h += "</div>";
+    if (!S.loaded) h += '<div class="empty"><strong>Ouverture de la cave…</strong>Vos bouteilles s\'affichent dès que la liste est chargée.</div>';
+    else if (!S.vins.length) h += '<div class="empty"><strong>La cave est vide</strong>Ajoutez votre première bouteille avec le bouton +.</div>';
+    else if (!vins.length) h += '<div class="empty"><strong>Aucun vin ne correspond</strong>Retirez un filtre ou changez la recherche.</div>';
+    else h += '<div class="eyebrow" style="margin:8px 2px 8px">' + vins.length + " vin" + (vins.length > 1 ? "s" : "") + ", du plus ancien au plus jeune</div><div class=\"list\">" + sortVins(vins).map(rowHtml).join("") + "</div>";
+    return h;
+  }
+
+  function viewPlan() {
+    var cfg = S.cfg, zone = cfg.zones.filter(function (z) { return z.nom === S.zone; })[0] || cfg.zones[cfg.zones.length - 1];
+    S.zone = zone.nom;
+    var here = S.vins.filter(function (v) { return v.zone === zone.nom && v.position === S.pos && (v.stock || 0) > 0; });
+    var h = '<div class="chips" role="group" aria-label="Zones">';
+    cfg.zones.forEach(function (z) {
+      var n = S.vins.reduce(function (t, v) { return t + (v.zone === z.nom ? (v.stock || 0) : 0); }, 0);
+      h += '<button class="chip" data-zone="' + esc(z.nom) + '" aria-pressed="' + (z.nom === zone.nom) + '">' + esc(z.nom) + ' <span class="num" style="opacity:.7">' + n + "</span></button>";
+    });
+    h += '</div><div class="plan-head"><div class="seg" role="group" aria-label="Côté">';
+    cfg.positions.forEach(function (p) { h += '<button data-pos="' + esc(p) + '" aria-pressed="' + (p === S.pos) + '">' + esc(p) + "</button>"; });
+    h += '</div><span class="eyebrow">' + esc(zone.nom) + " · " + zone.etages + " étages × " + cfg.casiers + " casiers</span></div>";
+    h += '<div class="rack"><div class="rack-grid" style="--cols:' + cfg.casiers + '"><div></div>';
+    for (var c = 1; c <= cfg.casiers; c++) h += '<div class="rack-lbl">C' + c + "</div>";
+    for (var e = zone.etages; e >= 1; e--) {
+      h += '<div class="rack-lbl">É' + e + "</div>";
+      for (var c2 = 1; c2 <= cfg.casiers; c2++) {
+        var ins = here.filter(function (v) { return v.etage === e && v.casier === c2; });
+        var n = ins.reduce(function (t, v) { return t + (v.stock || 0); }, 0);
+        var lbl = "Étage " + e + ", casier " + c2 + (n ? ", " + n + " bouteille" + (n > 1 ? "s" : "") : ", vide");
+        h += '<button class="cell' + (n ? " full" : "") + '" data-cell="' + e + "-" + c2 + '" aria-label="' + esc(lbl) + '">' +
+          (n ? '<span class="n num">' + n + '</span><span class="ap">' + esc(ins[0].appellation || nom(ins[0])) + (ins.length > 1 ? " +" + (ins.length - 1) : "") + '</span><span class="dots">' + ins.slice(0, 4).map(couleurDot).join("") + "</span>" : "") + "</button>";
+      }
+    }
+    h += '</div><div class="legend"><span>Étage 1 = en bas du casier</span><span>Touchez un casier pour voir ou ranger</span></div></div>';
+    var loose = S.vins.filter(function (v) { return v.zone === zone.nom && (v.stock || 0) > 0 && !(v.position === S.pos && v.etage && v.casier) && (v.position === S.pos || !v.position); });
+    if (loose.length) h += '<div class="unplaced"><div class="bucket-h"><h2>Dans cette zone, casier à préciser</h2><span class="count num">' + loose.reduce(function (t, v) { return t + v.stock; }, 0) + " bt</span></div><div class=\"list\">" + sortVins(loose).map(rowHtml).join("") + "</div></div>";
+    var nowhere = S.vins.filter(function (v) { return !v.zone && (v.stock || 0) > 0; });
+    if (nowhere.length) h += '<div class="unplaced"><div class="bucket-h"><h2>Sans emplacement</h2><span class="count num">' + nowhere.reduce(function (t, v) { return t + v.stock; }, 0) + " bt</span></div><div class=\"list\">" + sortVins(nowhere).map(rowHtml).join("") + "</div></div>";
+    return h;
+  }
+
+  function viewBoire() {
+    var groups = [
+      ["declin", "Passé ou en déclin", "À ouvrir sans attendre, ou à vérifier."],
+      ["urgent", "À boire vite", "La fenêtre se ferme cette année ou l'an prochain."],
+      ["apogee", "À boire maintenant", "Dans leur fenêtre de consommation."],
+      ["garde", "En garde", "Encore trop jeunes."],
+      ["inconnu", "À évaluer", "Ajoutez « à boire de… à… » dans la fiche pour les classer automatiquement."]
+    ];
+    var inStock = S.vins.filter(function (v) { return (v.stock || 0) > 0; });
+    if (!S.loaded) return '<div class="empty"><strong>Ouverture de la cave…</strong></div>';
+    var h = "";
+    groups.forEach(function (g) {
+      var vs = inStock.filter(function (v) { return maturite(v).k === g[0]; });
+      if (!vs.length) return;
+      var n = vs.reduce(function (t, v) { return t + v.stock; }, 0);
+      var ests = g[0] === "inconnu" ? vs.filter(hasEst) : [];
+      if (ests.length) {
+        var prev = {}; ests.forEach(function (v) { var k = maturite({ boireDe: v.estimation.de, boireJusqu: v.estimation.a }).l; prev[k] = (prev[k] || 0) + v.stock; });
+        g = g.slice(); g[2] = "Claude a estimé une fenêtre pour " + ests.length + " de ces vins (repère ≈ sur chaque ligne). Une fois validées, elles donnent : " + Object.keys(prev).map(function (k) { return prev[k] + " bt " + k.toLowerCase(); }).join(", ") + ". Ouvrez une fiche pour valider ou ignorer une estimation." +
+          (S.canWrite && S.db ? '</p><p style="margin:0 2px 10px"><button class="btn primary" id="acceptAll">Valider les ' + ests.length + " estimations</button>" : "");
+      }
+      h += '<section class="bucket"><div class="bucket-h"><h2>' + g[1] + '</h2><span class="count num">' + n + " bt</span></div>" +
+        '<p style="margin:-4px 2px 8px;color:var(--muted);font-size:13px">' + g[2] + '</p><div class="list">' + sortVins(vs).map(rowHtml).join("") + "</div></section>";
+    });
+    return h || '<div class="empty"><strong>Rien en stock</strong></div>';
+  }
+
+  function fmtDate(iso) { var d = new Date(iso); return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }); }
+  function viewJournal() {
+    var y = new Date().getFullYear(), inY = 0, outY = 0;
+    S.mvts.forEach(function (m) { if (new Date(m.date).getFullYear() === y) { if (m.type === "entree") inY += m.qte; else outY += m.qte; } });
+    var b = S.vins.reduce(function (t, v) { return t + (v.stock || 0); }, 0);
+    var h = '<div class="tiles"><div class="tile"><div class="v num">' + inY + '</div><div class="l">entrées ' + y + '</div></div><div class="tile"><div class="v num">' + outY + '</div><div class="l">sorties ' + y + '</div></div><div class="tile"><div class="v num">' + b + '</div><div class="l">en cave</div></div></div>';
+    var CL = window.caveLocal;
+    if (CL && CL.shared && CL.hasLegacy()) h += '<div class="notice" style="display:grid;gap:8px"><div>Ce téléphone contient des données de l\'ancienne version (avant le partage). Les envoyer dans la cave partagée ?</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" id="legacyyes">Envoyer</button><button class="btn" id="legacyno">Ignorer</button></div></div>';
+    if (CL && CL.shared && CL.email()) h += '<div class="bucket-h"><h2>Compte</h2><button class="btn" id="logout">Se déconnecter</button></div><p style="margin:-4px 2px 10px;color:var(--muted);font-size:13px">Connecté : ' + esc(CL.email()) + '. La cave est partagée avec les personnes autorisées.</p>';
+    if (CL) h += '<div class="bucket-h"><h2>Sauvegarde</h2></div><p style="margin:-4px 2px 10px;color:var(--muted);font-size:13px">' + (CL.shared ? 'Tes données sont en ligne. Une sauvegarde par fichier reste utile de temps en temps.' : 'Tes données restent sur ce téléphone. Fais une sauvegarde de temps en temps (fichier à garder dans tes e-mails ou ton cloud) : elle sert aussi à passer sur un autre appareil.') + '</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn primary" id="backup">Sauvegarder</button><label class="btn" for="restore">Restaurer un fichier</label><input type="file" id="restore" accept=".json,application/json" hidden></div><div id="restoreslot"></div>';
+    h += '<div class="bucket-h"><h2>Mouvements</h2>' + (S.downloads ? '<button class="btn" id="export">Exporter (CSV)</button>' : "") + "</div>";
+    if (!S.mvts.length) h += '<div class="empty"><strong>Aucun mouvement pour l\'instant</strong>Chaque entrée ou sortie faite depuis une fiche vin est notée ici avec sa date.</div>';
+    else {
+      var cur = "";
+      S.mvts.forEach(function (m) {
+        var mo = new Date(m.date).toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+        if (mo !== cur) { if (cur) h += "</div>"; h += '<div class="eyebrow" style="margin:14px 2px 8px">' + esc(mo) + '</div><div class="list">'; cur = mo; }
+        var inn = m.type === "entree";
+        h += '<div class="mv"><div class="sign ' + (inn ? "in" : "out") + '">' + (inn ? "+" : "−") + m.qte + '</div><div class="t"><div style="font-weight:600">' + esc(m.libelle || "Vin") + '</div><div style="color:var(--muted);font-size:13px">' + esc([m.motif, m.note].filter(Boolean).join(" · ")) + '</div></div><div class="d num">' + esc(fmtDate(m.date)) + "<br>reste " + (m.stockApres != null ? m.stockApres : "?") + "</div></div>";
+      });
+      h += "</div>";
+    }
+    return h;
+  }
+
+  function render() {
+    renderStats();
+    var m = $("#main");
+    m.innerHTML = S.view === "plan" ? viewPlan() : S.view === "boire" ? viewBoire() : S.view === "journal" ? viewJournal() : viewListe();
+    document.querySelectorAll("nav.tabs button").forEach(function (b) { if (b.dataset.view === S.view) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
+    $("#fab").hidden = !(S.canWrite && S.db && S.view === "liste");
+  }
+
+  /* ---------- Panneaux ---------- */
+  function openSheet(title, body, onMount) {
+    var root = $("#sheet-root");
+    root.innerHTML = '<div class="scrim" id="scrim"><div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(title) + '"><div class="sheet-h"><h3>' + esc(title) + '</h3><button class="x" id="close" aria-label="Fermer">×</button></div><div class="sheet-b" id="sb">' + body + "</div></div></div>";
+    $("#close").onclick = closeSheet;
+    $("#scrim").addEventListener("click", function (e) { if (e.target.id === "scrim") closeSheet(); });
+    if (onMount) onMount($("#sb"));
+  }
+  function closeSheet() { $("#sheet-root").innerHTML = ""; S.openId = null; }
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeSheet(); });
+
+  function byId(id) { return S.vins.filter(function (v) { return v.id === id; })[0]; }
+
+  function openFiche(id, keep) {
+    var v = byId(id); if (!v) return closeSheet();
+    S.openId = id;
+    var m = maturite(v), y = new Date().getFullYear();
+    var h = '<div class="hero">' + thumb(v, true) + '<div><div class="title">' + esc(nom(v)) + '</div><div class="sub">' + esc(sousTitre(v)) + '</div><div class="meta">' + couleurDot(v) + pill(v) +
+      (v.classification ? '<span class="tag">' + esc(v.classification) + "</span>" : "") + "</div></div></div>";
+    h += '<div class="loc"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.3h18M3 14.6h18M9 4v16M15 4v16"/></svg><div><div class="code">' + esc(locCode(v) || "À ranger") + '</div><div style="font-size:12px;color:var(--muted)">' + esc(locLong(v)) + "</div></div></div>";
+    h += '<div class="stockbar"><div><div class="eyebrow">En cave</div><div class="qty num">' + (v.stock || 0) + "<small>bouteille" + ((v.stock || 0) > 1 ? "s" : "") + "</small></div></div>" +
+      (S.canWrite ? '<button class="btn" data-mv="sortie"' + ((v.stock || 0) ? "" : " disabled") + '>− Sortie</button><button class="btn primary" data-mv="entree">+ Entrée</button>' : "") + '</div><div id="mvslot"></div>';
+    // fenêtre de consommation
+    h += '<div class="window"><div class="eyebrow">Maturité</div><div style="margin-top:4px"><span class="pill p-' + m.k + '">' + esc(m.l) + "</span> <span style=\"color:var(--muted);font-size:13px\">" + esc(m.d) + "</span></div>";
+    if (v.boireDe && v.boireJusqu && v.millesime) {
+      var lo = Math.min(v.millesime, y), hi = Math.max(v.boireJusqu, y) + 1, span = hi - lo || 1;
+      h += '<div class="bar"><div class="fill" style="left:' + ((v.boireDe - lo) / span * 100) + "%;width:" + ((v.boireJusqu - v.boireDe + 1) / span * 100) + '%"></div><div class="now" style="left:' + ((y - lo + .5) / span * 100) + '%" title="' + y + '"></div></div><div class="scale num"><span>' + lo + "</span><span>" + v.boireDe + "–" + v.boireJusqu + "</span><span>" + hi + "</span></div>";
+    }
+    if (hasEst(v)) h += '<div class="mvform" style="margin-top:10px"><div><strong>Estimation : à boire de ' + v.estimation.de + " à " + v.estimation.a + "</strong>" + (v.estimation.note ? '<div style="font-size:13px;color:var(--muted)">' + esc(v.estimation.note) + "</div>" : "") + "</div>" +
+      (S.canWrite ? '<div style="display:flex;gap:8px"><button class="btn primary" data-est="ok">Valider</button><button class="btn" data-est="no">Ignorer</button></div>' : "") + "</div>";
+    h += "</div>";
+    var rows = [["Région", [v.region, v.sousRegion].filter(Boolean).join(" · ")], ["Appellation", v.appellation], ["Cuvée", v.cuvee], ["Millésime", v.millesime], ["Format", v.format], ["Degré", v.degre ? String(v.degre).replace(".", ",") + " %" : ""], ["Cépage", v.cepage], ["Prix d'achat", v.prixAchat ? eur(v.prixAchat) : ""], ["Prix marché", v.prixMarche ? eur(v.prixMarche) : ""], ["Valeur en cave", v.prixMarche && v.stock ? eur(v.prixMarche * v.stock) : ""], ["Notes", v.notes], ["Réf. Excel", v.ref]];
+    h += '<dl class="kv">' + rows.filter(function (r) { return r[1] !== "" && r[1] != null; }).map(function (r) { return "<dt>" + r[0] + "</dt><dd>" + esc(r[1]) + "</dd>"; }).join("") + "</dl>";
+    var hist = S.mvts.filter(function (x) { return x.vinId === v.id; });
+    if (hist.length) h += '<div class="eyebrow" style="margin:16px 0 8px">Historique</div><div class="list">' + hist.slice(0, 12).map(function (x) { var inn = x.type === "entree"; return '<div class="mv"><div class="sign ' + (inn ? "in" : "out") + '">' + (inn ? "+" : "−") + x.qte + '</div><div class="t"><div>' + esc(x.motif || (inn ? "Entrée" : "Sortie")) + '</div><div style="color:var(--muted);font-size:13px">' + esc(x.note || "") + '</div></div><div class="d num">' + esc(fmtDate(x.date)) + "</div></div>"; }).join("") + "</div>";
+    if (S.canWrite) h += '<div class="actions"><button class="btn" id="edit">Modifier la fiche</button><button class="btn danger" id="del">Supprimer</button></div><div id="delslot"></div>';
+    var fn = function (b) {
+      b.querySelectorAll("[data-mv]").forEach(function (btn) { btn.onclick = function () { mvForm(v, btn.dataset.mv); }; });
+      var ed = $("#edit", b); if (ed) ed.onclick = function () { openForm(v); };
+      b.querySelectorAll("[data-est]").forEach(function (btn) { btn.onclick = function () { btn.disabled = true; (btn.dataset.est === "ok" ? accepter(v) : ignorer(v)).then(function () { toast(btn.dataset.est === "ok" ? "Fenêtre validée" : "Estimation ignorée"); }, fail); }; });
+      var dl = $("#del", b); if (dl) dl.onclick = function () {
+        $("#delslot").innerHTML = '<div class="confirm"><div>Supprimer « ' + esc(nom(v)) + " » de la cave ? L'historique de ses mouvements est conservé.</div><div style=\"display:flex;gap:8px\"><button class=\"btn danger\" id=\"delyes\">Supprimer</button><button class=\"btn\" id=\"delno\">Annuler</button></div></div>";
+        $("#delno").onclick = function () { $("#delslot").innerHTML = ""; };
+        $("#delyes").onclick = function () { S.db.doc("vins/" + v.id).delete().then(function () { closeSheet(); toast("Vin supprimé"); }, fail); };
+      };
+    };
+    if (keep && $("#sb")) { var sb = $("#sb"), st = sb.scrollTop; sb.innerHTML = h; fn(sb); sb.scrollTop = st; $(".sheet-h h3").textContent = nom(v); }
+    else openSheet(nom(v), h, fn);
+  }
+
+  function mvForm(v, type) {
+    var inn = type === "entree", q = 1, motifs = inn ? MOTIFS_IN : MOTIFS_OUT;
+    var slot = $("#mvslot");
+    slot.innerHTML = '<div class="mvform"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><strong>' + (inn ? "Entrée en cave" : "Sortie de cave") + '</strong><div class="stepper"><button type="button" id="qm" aria-label="Moins">−</button><span class="num" id="qv">1</span><button type="button" id="qp" aria-label="Plus">+</button></div></div>' +
+      '<div class="chips" style="padding:0;flex-wrap:wrap" id="motifs">' + motifs.map(function (m, i) { return '<button type="button" class="chip" data-m="' + esc(m) + '" aria-pressed="' + (i === 0) + '">' + esc(m) + "</button>"; }).join("") + "</div>" +
+      '<form class="f" id="mvf"><label>Note (facultatif)<input id="mvnote" placeholder="' + (inn ? "Caviste, prix payé…" : "Avec qui, accord, impression…") + '"></label><div style="display:flex;gap:8px"><button class="btn primary" type="submit">Enregistrer</button><button class="btn" type="button" id="mvcancel">Annuler</button></div></form></div>';
+    var motif = motifs[0], max = inn ? 999 : (v.stock || 0);
+    $("#qm").onclick = function () { q = Math.max(1, q - 1); $("#qv").textContent = q; };
+    $("#qp").onclick = function () { q = Math.min(max, q + 1); $("#qv").textContent = q; };
+    $("#motifs").querySelectorAll("[data-m]").forEach(function (b) { b.onclick = function () { motif = b.dataset.m; $("#motifs").querySelectorAll("[data-m]").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); }; });
+    $("#mvcancel").onclick = function () { slot.innerHTML = ""; };
+    $("#mvf").onsubmit = function (e) {
+      e.preventDefault();
+      var btn = e.target.querySelector("[type=submit]"); btn.disabled = true;
+      var stock = Math.max(0, (v.stock || 0) + (inn ? q : -q));
+      S.db.doc("vins/" + v.id).update({ stock: stock, maj: new Date().toISOString() })
+        .then(function () { return S.db.collection("mouvements").add({ vinId: v.id, libelle: nom(v) + (v.millesime ? " " + v.millesime : ""), type: type, qte: q, motif: motif, note: $("#mvnote").value.trim(), date: new Date().toISOString(), stockApres: stock }); })
+        .then(function () { toast((inn ? "+" : "−") + q + " · reste " + stock); }, fail);
+    };
+  }
+
+  function sel(id, opts, val, empty) { return '<select id="' + id + '">' + (empty != null ? '<option value="">' + empty + "</option>" : "") + opts.map(function (o) { var ov = Array.isArray(o) ? o[0] : o, ol = Array.isArray(o) ? o[1] : o; return '<option value="' + esc(ov) + '"' + (String(val) === String(ov) ? " selected" : "") + ">" + esc(ol) + "</option>"; }).join("") + "</select>"; }
+  function inp(id, val, type, extra) { return '<input id="' + id + '" type="' + (type || "text") + '" value="' + esc(val == null ? "" : val) + '"' + (extra || "") + ">"; }
+
+  function openForm(v) {
+    S.openId = null;
+    var isNew = !v; v = v || { couleur: "Rouge", format: "75cl", pays: "FR", stock: 1 };
+    var cfg = S.cfg, y = new Date().getFullYear();
+    var zones = cfg.zones.map(function (z) { return z.nom; });
+    var h = '<form class="f" id="vf">' +
+      '<fieldset><legend>Le vin</legend><label>Château ou domaine' + inp("f-domaine", v.domaine) + '</label><div class="grid2"><label>Appellation' + inp("f-appellation", v.appellation, "text", ' list="dl-app"') + '</label><label>Cuvée' + inp("f-cuvee", v.cuvee) + "</label></div>" +
+      '<div class="grid3"><label>Millésime' + inp("f-millesime", v.millesime, "number", ' inputmode="numeric" min="1900" max="' + (y + 1) + '"') + "</label><label>Couleur" + sel("f-couleur", COULEURS, v.couleur, "—") + "</label><label>Format" + sel("f-format", FORMATS, v.format, "—") + "</label></div>" +
+      '<div class="grid2"><label>Région' + inp("f-region", v.region, "text", ' list="dl-reg"') + "</label><label>Sous-région" + inp("f-sousRegion", v.sousRegion) + "</label></div>" +
+      '<div class="grid3"><label>Classement' + inp("f-classification", v.classification, "text", ' list="dl-cls"') + "</label><label>Cépage" + inp("f-cepage", v.cepage) + "</label><label>Degré %" + inp("f-degre", v.degre, "number", ' step="0.5" inputmode="decimal"') + "</label></div></fieldset>" +
+      '<fieldset><legend>Emplacement</legend><div class="grid2"><label>Zone' + sel("f-zone", zones, v.zone, "À ranger") + "</label><label>Côté" + sel("f-position", cfg.positions, v.position, "—") + '</label></div><div class="grid2"><label>Étage <span class="hint">(1 = bas)</span><span id="etwrap"></span></label><label>Casier' + sel("f-casier", Array.from({ length: cfg.casiers }, function (_, i) { return i + 1; }), v.casier, "—") + "</label></div>" +
+      (isNew ? '<label>Nombre de bouteilles' + inp("f-stock", v.stock, "number", ' min="0" inputmode="numeric"') + '<span class="hint">Noté comme entrée « Achat » dans le journal.</span></label>' : "") + "</fieldset>" +
+      '<fieldset><legend>Maturité</legend><div class="grid2"><label>À boire à partir de' + inp("f-boireDe", v.boireDe, "number", ' inputmode="numeric" placeholder="' + (hasEst(v) ? "estim. " + v.estimation.de : "ex. " + y) + '"') + "</label><label>À boire jusqu'en" + inp("f-boireJusqu", v.boireJusqu, "number", ' inputmode="numeric" placeholder="' + (hasEst(v) ? "estim. " + v.estimation.a : "ex. " + (y + 6)) + '"') + '</label></div><label>Phase (si pas de fenêtre)' + sel("f-phase", PHASES, v.phase, "—") + "</label></fieldset>" +
+      '<fieldset><legend>Prix et notes</legend><div class="grid2"><label>Prix d\'achat €' + inp("f-prixAchat", v.prixAchat, "number", ' step="0.01" inputmode="decimal"') + "</label><label>Prix marché €" + inp("f-prixMarche", v.prixMarche, "number", ' step="0.01" inputmode="decimal"') + '</label></div><label>Notes<textarea id="f-notes" rows="3">' + esc(v.notes || "") + "</textarea></label>" +
+      (S.assets ? '<label>Photo de l\'étiquette<input id="f-photo" type="file" accept="image/*"></label>' : "") + "</fieldset>" +
+      '<div style="display:flex;gap:8px"><button class="btn primary" type="submit">' + (isNew ? "Ajouter à la cave" : "Enregistrer") + '</button><button class="btn" type="button" id="fcancel">Annuler</button></div></form>' +
+      dl("dl-app", "appellation") + dl("dl-reg", "region") + dl("dl-cls", "classification");
+    openSheet(isNew ? "Nouveau vin" : "Modifier la fiche", h, function () {
+      function etages() { var z = cfg.zones.filter(function (z) { return z.nom === $("#f-zone").value; })[0]; var n = z ? z.etages : 4; var cur = $("#f-etage") ? $("#f-etage").value : v.etage; $("#etwrap").innerHTML = sel("f-etage", Array.from({ length: n }, function (_, i) { return i + 1; }), cur, "—"); }
+      etages(); $("#f-zone").onchange = etages;
+      $("#fcancel").onclick = function () { isNew ? closeSheet() : openFiche(v.id); };
+      $("#vf").onsubmit = function (e) { e.preventDefault(); saveForm(v, isNew, e.target.querySelector("[type=submit]")); };
+    });
+  }
+  function dl(id, field) { var vals = {}; S.vins.forEach(function (v) { if (v[field]) vals[v[field]] = 1; }); return '<datalist id="' + id + '">' + Object.keys(vals).sort().map(function (x) { return '<option value="' + esc(x) + '">'; }).join("") + "</datalist>"; }
+
+  function saveForm(v, isNew, btn) {
+    var txt = ["domaine", "appellation", "cuvee", "couleur", "format", "region", "sousRegion", "classification", "cepage", "zone", "position", "phase", "notes"];
+    var nums = ["millesime", "degre", "etage", "casier", "boireDe", "boireJusqu", "prixAchat", "prixMarche"];
+    var d = {};
+    Object.keys(v).forEach(function (k) { if (k !== "id") d[k] = v[k]; });
+    txt.forEach(function (k) { var el = $("#f-" + k); if (!el) return; var x = el.value.trim(); if (x) d[k] = x; else delete d[k]; });
+    nums.forEach(function (k) { var el = $("#f-" + k); if (!el) return; var x = parseFloat(String(el.value).replace(",", ".")); if (isFinite(x)) d[k] = x; else delete d[k]; });
+    if (!d.domaine && !d.appellation) { toast("Indiquez au moins un domaine ou une appellation."); return; }
+    if (d.boireDe && d.boireJusqu && d.boireDe > d.boireJusqu) { toast("La fenêtre « à boire » est inversée."); return; }
+    if (isNew) { var s = parseInt($("#f-stock").value, 10); d.stock = isFinite(s) && s > 0 ? s : 0; d.ref = S.vins.reduce(function (m, x) { return Math.max(m, x.ref || 0); }, 0) + 1; }
+    d.maj = new Date().toISOString();
+    btn.disabled = true;
+    var id = isNew ? "v" + Date.now().toString(36) : v.id;
+    var file = $("#f-photo") && $("#f-photo").files[0];
+    var p = file ? S.assets.upload(file).then(function (a) { d.photo = a.url; d.photoId = a.id; }) : Promise.resolve();
+    p.then(function () { return S.db.doc("vins/" + id).set(d); })
+      .then(function () { if (isNew && d.stock > 0) return S.db.collection("mouvements").add({ vinId: id, libelle: nom(d) + (d.millesime ? " " + d.millesime : ""), type: "entree", qte: d.stock, motif: "Achat", note: "", date: d.maj, stockApres: d.stock }); })
+      .then(function () { toast(isNew ? "Vin ajouté" : "Fiche enregistrée"); openFiche(id); }, function (e) { btn.disabled = false; fail(e); });
+  }
+
+  function fail(e) {
+    var c = e && e.code;
+    if (c === "invalid_argument") { S.canWrite = false; render(); toast("Vous ne pouvez pas modifier cette cave."); }
+    else if (c === "quota_exceeded") toast("La cave est pleine côté stockage. Supprimez d'anciens mouvements.");
+    else toast("Enregistrement impossible pour le moment. Réessayez.");
+  }
+
+  function exportCsv() {
+    var cols = [["ref", "Réf"], ["domaine", "Château/Domaine"], ["cuvee", "Cuvée"], ["appellation", "Appellation"], ["classification", "Classification"], ["region", "Région"], ["sousRegion", "Sous-région"], ["couleur", "Couleur"], ["format", "Format"], ["millesime", "Millésime"], ["degre", "Degré"], ["stock", "Stock"], ["zone", "Zone"], ["position", "Position"], ["etage", "Étage"], ["casier", "Casier"], ["boireDe", "À boire de"], ["boireJusqu", "À boire jusqu'en"], ["phase", "Phase"], ["prixAchat", "Prix d'achat"], ["prixMarche", "Prix marché"], ["notes", "Notes"]];
+    var q = function (x) { x = x == null ? "" : String(x); return /[";\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; };
+    var lines = [cols.map(function (c) { return c[1]; }).join(";")].concat(sortVins(S.vins).map(function (v) { return cols.map(function (c) { return q(v[c[0]]); }).join(";"); }));
+    lines.push("", "Mouvements", "Date;Type;Quantité;Vin;Motif;Note;Stock après");
+    S.mvts.forEach(function (m) { lines.push([m.date.slice(0, 10), m.type === "entree" ? "Entrée" : "Sortie", m.qte, q(m.libelle), q(m.motif), q(m.note), m.stockApres].join(";")); });
+    S.downloads.save({ filename: "cave-" + new Date().toISOString().slice(0, 10) + ".csv", data: "﻿" + lines.join("\n") }).catch(function (e) { if (e && e.code !== "declined") toast("Export impossible pour le moment."); });
+  }
+
+  /* ---------- Événements ---------- */
+  document.querySelector("nav.tabs").addEventListener("click", function (e) { var b = e.target.closest("button[data-view]"); if (!b) return; S.view = b.dataset.view; remember(); render(); window.scrollTo(0, 0); });
+  $("#fab").onclick = function () { openForm(null); };
+  $("#main").addEventListener("input", function (e) { if (e.target.id === "q") { S.q = e.target.value; var pos = e.target.selectionStart; render(); var q = $("#q"); q.focus(); try { q.setSelectionRange(pos, pos); } catch (x) {} } });
+  $("#main").addEventListener("change", function (e) {
+    if (e.target.id !== "restore" || !e.target.files[0]) return;
+    S.pendingRestore = e.target.files[0];
+    $("#restoreslot").innerHTML = '<div class="confirm"><div>Charger dans la cave le contenu de « ' + esc(S.pendingRestore.name) + ' » ?</div><div style="display:flex;gap:8px"><button class="btn danger" id="restoreyes">Charger</button><button class="btn" id="restoreno">Annuler</button></div></div>';
+  });
+  $("#main").addEventListener("click", function (e) {
+    var t = e.target.closest("button"); if (!t) return;
+    if (t.dataset.open) return openFiche(t.dataset.open);
+    if (t.id === "export") return exportCsv();
+    if (t.id === "logout") return window.caveLocal.signOut();
+    if (t.id === "legacyyes") return window.caveLocal.sendLegacy().then(function (n) { toast(n + " vins envoyés"); render(); });
+    if (t.id === "legacyno") { window.caveLocal.dismissLegacy(); return render(); }
+    if (t.id === "backup") return window.caveLocal.exportBackup().catch(function () {});
+    if (t.id === "restoreyes") return window.caveLocal.importBackup(S.pendingRestore).then(function (n) { toast("Sauvegarde restaurée : " + n + " vins"); }, function (e) { toast((e && e.message) || "Fichier illisible."); });
+    if (t.id === "restoreno") { $("#restoreslot").innerHTML = ""; return; }
+    if (t.id === "acceptAll") {
+      t.disabled = true;
+      var todo = S.vins.filter(function (v) { return hasEst(v) && (v.stock || 0) > 0 && maturite(v).k === "inconnu"; }), i = 0;
+      var next = function () { if (i >= todo.length) return toast(todo.length + " fenêtres validées"); accepter(todo[i++]).then(next, fail); };
+      return next();
+    }
+    if (t.dataset.f === "stock") { S.stockOnly = !S.stockOnly; return render(); }
+    if (t.dataset.f === "couleur") { S.couleur = S.couleur === t.dataset.v ? null : t.dataset.v; return render(); }
+    if (t.dataset.f === "phase") { S.phase = S.phase === t.dataset.v ? null : t.dataset.v; return render(); }
+    if (t.dataset.zone) { S.zone = t.dataset.zone; remember(); return render(); }
+    if (t.dataset.pos) { S.pos = t.dataset.pos; remember(); return render(); }
+    if (t.dataset.cell) {
+      var p = t.dataset.cell.split("-").map(Number);
+      var ins = S.vins.filter(function (v) { return v.zone === S.zone && v.position === S.pos && v.etage === p[0] && v.casier === p[1] && (v.stock || 0) > 0; });
+      var code = zoneAbbr(S.zone) + "·" + (S.pos === "Avant" ? "AV" : "AR") + "·É" + p[0] + "·C" + p[1];
+      openSheet("Casier " + code, (ins.length ? '<div class="list">' + sortVins(ins).map(rowHtml).join("") + "</div>" : '<div class="empty"><strong>Casier vide</strong>Pour y ranger un vin, ouvrez sa fiche puis « Modifier la fiche » et choisissez cet emplacement.</div>'), function (b) {
+        b.addEventListener("click", function (ev) { var r = ev.target.closest("[data-open]"); if (r) openFiche(r.dataset.open); });
+      });
+    }
+  });
+
+  render();
+
+  /* ---------- Données ---------- */
+  function boot() {
+    if (!window.claude || !window.claude.use) { S.loaded = true; S.canWrite = false; render(); $("#main").insertAdjacentHTML("afterbegin", '<div class="notice">Ouvrez cette page depuis Claude pour voir et modifier votre cave.</div>'); return; }
+    claude.use("user").then(function (u) { if (u && u.can) u.can("data.write").then(function (c) { if (c === false) { S.canWrite = false; render(); } }); });
+    claude.use("assets").then(function (a) { S.assets = a; });
+    claude.use("downloads").then(function (d) { S.downloads = d; if (S.view === "journal") render(); });
+    claude.use("db").then(function (db) {
+      if (!db) { S.loaded = true; S.canWrite = false; render(); $("#main").insertAdjacentHTML("afterbegin", '<div class="notice">Connectez-vous à Claude pour ouvrir votre cave.</div>'); return; }
+      S.db = db;
+      var got = 0, done = function () { if (++got >= 2) S.loaded = true; };
+      db.collection("vins").onSnapshot(function (snap) {
+        S.vins = snap.docs.map(function (d) { var x = Object.assign({}, d.data()); x.id = d.id; return x; });
+        done(); render(); if (S.openId) openFiche(S.openId, true);
+      }, function () { S.loaded = true; render(); });
+      db.collection("mouvements").orderBy("date", "desc").limit(1000).onSnapshot(function (snap) {
+        S.mvts = snap.docs.map(function (d) { var x = Object.assign({}, d.data()); x.id = d.id; return x; });
+        done(); render(); if (S.openId && $("#mvslot") && !$("#mvslot").children.length) openFiche(S.openId, true);
+      }, function () {});
+      db.doc("config/cave").onSnapshot(function (d) { if (d.exists) { S.cfg = Object.assign({}, DEFAULT_CFG, d.data()); render(); } }, function () {});
+    });
+  }
+  boot();
+})();
+</script>
+
+</body>
+</html>

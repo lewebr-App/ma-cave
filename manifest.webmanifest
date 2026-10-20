@@ -1,0 +1,16 @@
+{
+  "name": "Ma cave à vins",
+  "short_name": "Ma cave",
+  "description": "Bouteilles, plan des casiers, maturité et journal des entrées et sorties.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ECEEEC",
+  "theme_color": "#7B1E35",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
