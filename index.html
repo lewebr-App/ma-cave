@@ -200,6 +200,14 @@ form.f { display: grid; gap: 12px }
 .f fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px 12px; display: grid; gap: 10px; margin: 0; min-width: 0 }
 .f legend { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 4px }
 .f .hint { font-size: 12px; color: var(--muted); font-weight: 400 }
+.f label.btn { display: inline-flex; font-size: 14px; color: var(--ink); font-weight: 600 }
+.photo-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px }
+.photo-actions .btn { padding: 8px 12px; font-size: 13px }
+.cfg-row { display: grid; grid-template-columns: minmax(0,1fr) 64px 64px auto; gap: 6px; align-items: end; padding: 8px 0; border-bottom: 1px solid var(--line) }
+.cfg-row.pos { grid-template-columns: minmax(0,1fr) auto }
+.cfg-row .tools { display: flex; gap: 4px }
+.cfg-row .tools button { width: 36px; height: 40px; padding: 0; border: 1px solid var(--line); background: var(--card); border-radius: 9px; font-size: 15px }
+.cfg-row .tools button:disabled { opacity: .35 }
 .confirm { padding: 12px; border-radius: 12px; background: var(--bad-soft); color: var(--bad); display: grid; gap: 8px; margin-top: 10px }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 86px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--stone); padding: 10px 16px; border-radius: 10px; font-size: 14px; max-width: calc(100% - 32px) }
@@ -334,9 +342,15 @@ form.f { display: grid; gap: 12px }
     return h;
   }
 
+  function nbCasiers(z) { return (z && z.casiers) || S.cfg.casiers || 6; }
+
   function viewPlan() {
     var cfg = S.cfg, zone = cfg.zones.filter(function (z) { return z.nom === S.zone; })[0] || cfg.zones[cfg.zones.length - 1];
+    var cfgBtn = S.canWrite && S.db ? '<button class="btn" id="cfgopen">Configurer la cave</button>' : "";
+    if (!zone) return '<div class="empty"><strong>Aucune zone définie</strong>Décrivez vos casiers pour voir le plan.</div><div class="actions">' + cfgBtn + "</div>";
     S.zone = zone.nom;
+    if (cfg.positions.indexOf(S.pos) < 0) S.pos = cfg.positions[0];
+    var nc = nbCasiers(zone);
     var here = S.vins.filter(function (v) { return v.zone === zone.nom && v.position === S.pos && (v.stock || 0) > 0; });
     var h = '<div class="chips" role="group" aria-label="Zones">';
     cfg.zones.forEach(function (z) {
@@ -345,12 +359,12 @@ form.f { display: grid; gap: 12px }
     });
     h += '</div><div class="plan-head"><div class="seg" role="group" aria-label="Côté">';
     cfg.positions.forEach(function (p) { h += '<button data-pos="' + esc(p) + '" aria-pressed="' + (p === S.pos) + '">' + esc(p) + "</button>"; });
-    h += '</div><span class="eyebrow">' + esc(zone.nom) + " · " + zone.etages + " étages × " + cfg.casiers + " casiers</span></div>";
-    h += '<div class="rack"><div class="rack-grid" style="--cols:' + cfg.casiers + '"><div></div>';
-    for (var c = 1; c <= cfg.casiers; c++) h += '<div class="rack-lbl">C' + c + "</div>";
+    h += '</div><span class="eyebrow">' + esc(zone.nom) + " · " + zone.etages + " étages × " + nc + " casiers</span>" + cfgBtn + "</div>";
+    h += '<div class="rack"><div class="rack-grid" style="--cols:' + nc + '"><div></div>';
+    for (var c = 1; c <= nc; c++) h += '<div class="rack-lbl">C' + c + "</div>";
     for (var e = zone.etages; e >= 1; e--) {
       h += '<div class="rack-lbl">É' + e + "</div>";
-      for (var c2 = 1; c2 <= cfg.casiers; c2++) {
+      for (var c2 = 1; c2 <= nc; c2++) {
         var ins = here.filter(function (v) { return v.etage === e && v.casier === c2; });
         var n = ins.reduce(function (t, v) { return t + (v.stock || 0); }, 0);
         var lbl = "Étage " + e + ", casier " + c2 + (n ? ", " + n + " bouteille" + (n > 1 ? "s" : "") : ", vide");
@@ -439,12 +453,20 @@ form.f { display: grid; gap: 12px }
 
   function byId(id) { return S.vins.filter(function (v) { return v.id === id; })[0]; }
 
+  // Photo de l'étiquette : appareil photo direct ou galerie.
+  function photoPicker(prefix) {
+    return '<div class="photo-actions"><label class="btn" for="' + prefix + '-cam"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg> Prendre une photo</label><label class="btn" for="' + prefix + '-gal">Choisir une image</label></div>' +
+      '<input id="' + prefix + '-cam" type="file" accept="image/*" capture="environment" hidden><input id="' + prefix + '-gal" type="file" accept="image/*" hidden>';
+  }
+  function onPhoto(root, prefix, cb) { ["cam", "gal"].forEach(function (k) { var el = $("#" + prefix + "-" + k, root); if (el) el.onchange = function () { if (el.files[0]) cb(el.files[0]); el.value = ""; }; }); }
+
   function openFiche(id, keep) {
     var v = byId(id); if (!v) return closeSheet();
     S.openId = id;
     var m = maturite(v), y = new Date().getFullYear();
     var h = '<div class="hero">' + thumb(v, true) + '<div><div class="title">' + esc(nom(v)) + '</div><div class="sub">' + esc(sousTitre(v)) + '</div><div class="meta">' + couleurDot(v) + pill(v) +
       (v.classification ? '<span class="tag">' + esc(v.classification) + "</span>" : "") + "</div></div></div>";
+    if (S.assets && S.canWrite) h += photoPicker("fp");
     h += '<div class="loc"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9.3h18M3 14.6h18M9 4v16M15 4v16"/></svg><div><div class="code">' + esc(locCode(v) || "À ranger") + '</div><div style="font-size:12px;color:var(--muted)">' + esc(locLong(v)) + "</div></div></div>";
     h += '<div class="stockbar"><div><div class="eyebrow">En cave</div><div class="qty num">' + (v.stock || 0) + "<small>bouteille" + ((v.stock || 0) > 1 ? "s" : "") + "</small></div></div>" +
       (S.canWrite ? '<button class="btn" data-mv="sortie"' + ((v.stock || 0) ? "" : " disabled") + '>− Sortie</button><button class="btn primary" data-mv="entree">+ Entrée</button>' : "") + '</div><div id="mvslot"></div>';
@@ -465,6 +487,11 @@ form.f { display: grid; gap: 12px }
     var fn = function (b) {
       b.querySelectorAll("[data-mv]").forEach(function (btn) { btn.onclick = function () { mvForm(v, btn.dataset.mv); }; });
       var ed = $("#edit", b); if (ed) ed.onclick = function () { openForm(v); };
+      onPhoto(b, "fp", function (file) {
+        toast("Enregistrement de la photo…");
+        S.assets.upload(file).then(function (a) { return S.db.doc("vins/" + v.id).update({ photo: a.url, photoId: a.id, maj: new Date().toISOString() }); })
+          .then(function () { toast("Photo enregistrée"); }, fail);
+      });
       b.querySelectorAll("[data-est]").forEach(function (btn) { btn.onclick = function () { btn.disabled = true; (btn.dataset.est === "ok" ? accepter(v) : ignorer(v)).then(function () { toast(btn.dataset.est === "ok" ? "Fenêtre validée" : "Estimation ignorée"); }, fail); }; });
       var dl = $("#del", b); if (dl) dl.onclick = function () {
         $("#delslot").innerHTML = '<div class="confirm"><div>Supprimer « ' + esc(nom(v)) + " » de la cave ? L'historique de ses mouvements est conservé.</div><div style=\"display:flex;gap:8px\"><button class=\"btn danger\" id=\"delyes\">Supprimer</button><button class=\"btn\" id=\"delno\">Annuler</button></div></div>";
@@ -510,20 +537,106 @@ form.f { display: grid; gap: 12px }
       '<div class="grid3"><label>Millésime' + inp("f-millesime", v.millesime, "number", ' inputmode="numeric" min="1900" max="' + (y + 1) + '"') + "</label><label>Couleur" + sel("f-couleur", COULEURS, v.couleur, "—") + "</label><label>Format" + sel("f-format", FORMATS, v.format, "—") + "</label></div>" +
       '<div class="grid2"><label>Région' + inp("f-region", v.region, "text", ' list="dl-reg"') + "</label><label>Sous-région" + inp("f-sousRegion", v.sousRegion) + "</label></div>" +
       '<div class="grid3"><label>Classement' + inp("f-classification", v.classification, "text", ' list="dl-cls"') + "</label><label>Cépage" + inp("f-cepage", v.cepage) + "</label><label>Degré %" + inp("f-degre", v.degre, "number", ' step="0.5" inputmode="decimal"') + "</label></div></fieldset>" +
-      '<fieldset><legend>Emplacement</legend><div class="grid2"><label>Zone' + sel("f-zone", zones, v.zone, "À ranger") + "</label><label>Côté" + sel("f-position", cfg.positions, v.position, "—") + '</label></div><div class="grid2"><label>Étage <span class="hint">(1 = bas)</span><span id="etwrap"></span></label><label>Casier' + sel("f-casier", Array.from({ length: cfg.casiers }, function (_, i) { return i + 1; }), v.casier, "—") + "</label></div>" +
+      '<fieldset><legend>Emplacement</legend><div class="grid2"><label>Zone' + sel("f-zone", zones, v.zone, "À ranger") + "</label><label>Côté" + sel("f-position", cfg.positions, v.position, "—") + '</label></div><div class="grid2"><label>Étage <span class="hint">(1 = bas)</span><span id="etwrap"></span></label><label>Casier<span id="cawrap"></span></label></div>' +
       (isNew ? '<label>Nombre de bouteilles' + inp("f-stock", v.stock, "number", ' min="0" inputmode="numeric"') + '<span class="hint">Noté comme entrée « Achat » dans le journal.</span></label>' : "") + "</fieldset>" +
       '<fieldset><legend>Maturité</legend><div class="grid2"><label>À boire à partir de' + inp("f-boireDe", v.boireDe, "number", ' inputmode="numeric" placeholder="' + (hasEst(v) ? "estim. " + v.estimation.de : "ex. " + y) + '"') + "</label><label>À boire jusqu'en" + inp("f-boireJusqu", v.boireJusqu, "number", ' inputmode="numeric" placeholder="' + (hasEst(v) ? "estim. " + v.estimation.a : "ex. " + (y + 6)) + '"') + '</label></div><label>Phase (si pas de fenêtre)' + sel("f-phase", PHASES, v.phase, "—") + "</label></fieldset>" +
       '<fieldset><legend>Prix et notes</legend><div class="grid2"><label>Prix d\'achat €' + inp("f-prixAchat", v.prixAchat, "number", ' step="0.01" inputmode="decimal"') + "</label><label>Prix marché €" + inp("f-prixMarche", v.prixMarche, "number", ' step="0.01" inputmode="decimal"') + '</label></div><label>Notes<textarea id="f-notes" rows="3">' + esc(v.notes || "") + "</textarea></label>" +
-      (S.assets ? '<label>Photo de l\'étiquette<input id="f-photo" type="file" accept="image/*"></label>' : "") + "</fieldset>" +
+      (S.assets ? '<div><div class="eyebrow">Photo de l\'étiquette</div>' + photoPicker("f-photo") + '<div id="f-photo-prev" class="hint" style="margin-top:6px;font-size:13px;color:var(--muted)"></div></div>' : "") + "</fieldset>" +
       '<div style="display:flex;gap:8px"><button class="btn primary" type="submit">' + (isNew ? "Ajouter à la cave" : "Enregistrer") + '</button><button class="btn" type="button" id="fcancel">Annuler</button></div></form>' +
       dl("dl-app", "appellation") + dl("dl-reg", "region") + dl("dl-cls", "classification");
-    openSheet(isNew ? "Nouveau vin" : "Modifier la fiche", h, function () {
-      function etages() { var z = cfg.zones.filter(function (z) { return z.nom === $("#f-zone").value; })[0]; var n = z ? z.etages : 4; var cur = $("#f-etage") ? $("#f-etage").value : v.etage; $("#etwrap").innerHTML = sel("f-etage", Array.from({ length: n }, function (_, i) { return i + 1; }), cur, "—"); }
-      etages(); $("#f-zone").onchange = etages;
+    S.formPhoto = null;
+    openSheet(isNew ? "Nouveau vin" : "Modifier la fiche", h, function (b) {
+      onPhoto(b, "f-photo", function (file) { S.formPhoto = file; $("#f-photo-prev").textContent = "Photo prête : elle sera enregistrée avec la fiche."; });
+      function etages() { var z = cfg.zones.filter(function (z) { return z.nom === $("#f-zone").value; })[0]; var n = z ? z.etages : 4; var cur = $("#f-etage") ? $("#f-etage").value : v.etage; $("#etwrap").innerHTML = sel("f-etage", Array.from({ length: n }, function (_, i) { return i + 1; }), cur, "—");
+        var curC = $("#f-casier") ? $("#f-casier").value : v.casier; $("#cawrap").innerHTML = sel("f-casier", Array.from({ length: nbCasiers(z) }, function (_, i) { return i + 1; }), curC, "—"); }
+      // « À ranger » vide côté, étage et casier, et les désactive tant qu'aucune zone n'est choisie.
+      function rangement() { var vide = !$("#f-zone").value; ["#f-position", "#f-etage", "#f-casier"].forEach(function (k) { var el = $(k); if (vide) el.value = ""; el.disabled = vide; }); }
+      etages(); rangement(); $("#f-zone").onchange = function () { etages(); rangement(); };
       $("#fcancel").onclick = function () { isNew ? closeSheet() : openFiche(v.id); };
       $("#vf").onsubmit = function (e) { e.preventDefault(); saveForm(v, isNew, e.target.querySelector("[type=submit]")); };
     });
   }
+  /* ---------- Configuration de la cave ---------- */
+  function openConfig() {
+    var D = {
+      zones: S.cfg.zones.map(function (z) { return { nom: z.nom, ancien: z.nom, etages: z.etages, casiers: nbCasiers(z) }; }),
+      positions: S.cfg.positions.map(function (p) { return { nom: p, ancien: p }; })
+    };
+    function body() {
+      var h = '<p style="margin:0 0 10px;color:var(--muted);font-size:13px">Renommer une zone ou un côté met à jour les bouteilles qui y sont rangées. Si vous supprimez une zone ou réduisez les étages ou casiers, les bouteilles concernées passent « à ranger » ou « casier à préciser ».</p>';
+      h += '<div class="eyebrow">Zones</div>';
+      D.zones.forEach(function (z, i) {
+        h += '<div class="cfg-row f"><label>Nom<input data-z="' + i + '" data-k="nom" value="' + esc(z.nom) + '"></label><label>Étages<input data-z="' + i + '" data-k="etages" type="number" min="1" max="30" inputmode="numeric" value="' + z.etages + '"></label><label>Casiers<input data-z="' + i + '" data-k="casiers" type="number" min="1" max="40" inputmode="numeric" value="' + z.casiers + '"></label>' +
+          '<div class="tools"><button type="button" data-up="' + i + '" aria-label="Monter"' + (i ? "" : " disabled") + '>↑</button><button type="button" data-down="' + i + '" aria-label="Descendre"' + (i < D.zones.length - 1 ? "" : " disabled") + '>↓</button><button type="button" data-delz="' + i + '" aria-label="Supprimer la zone">✕</button></div></div>';
+      });
+      h += '<div class="actions" style="margin-top:10px"><button class="btn" type="button" id="addz">+ Ajouter une zone</button></div>';
+      h += '<div class="eyebrow" style="margin-top:18px">Côtés (positions dans le casier)</div>';
+      D.positions.forEach(function (p, i) {
+        h += '<div class="cfg-row pos f"><label>Nom<input data-p="' + i + '" value="' + esc(p.nom) + '"></label><div class="tools"><button type="button" data-delp="' + i + '" aria-label="Supprimer le côté"' + (D.positions.length > 1 ? "" : " disabled") + ">✕</button></div></div>";
+      });
+      h += '<div class="actions" style="margin-top:10px"><button class="btn" type="button" id="addp">+ Ajouter un côté</button></div>';
+      h += '<div id="cfgmsg"></div><div class="actions" style="margin-top:18px"><button class="btn primary" type="button" id="cfgsave">Enregistrer</button><button class="btn" type="button" id="cfgcancel">Annuler</button></div>';
+      return h;
+    }
+    function mount(b) {
+      b.innerHTML = body();
+      b.querySelectorAll("[data-z]").forEach(function (el) { el.oninput = function () { var z = D.zones[+el.dataset.z], k = el.dataset.k; z[k] = k === "nom" ? el.value : parseInt(el.value, 10); }; });
+      b.querySelectorAll("[data-p]").forEach(function (el) { el.oninput = function () { D.positions[+el.dataset.p].nom = el.value; }; });
+      b.querySelectorAll("[data-up],[data-down]").forEach(function (el) { el.onclick = function () { var i = +(el.dataset.up || el.dataset.down), j = el.dataset.up ? i - 1 : i + 1; var t = D.zones[i]; D.zones[i] = D.zones[j]; D.zones[j] = t; mount(b); }; });
+      b.querySelectorAll("[data-delz]").forEach(function (el) { el.onclick = function () { D.zones.splice(+el.dataset.delz, 1); mount(b); }; });
+      b.querySelectorAll("[data-delp]").forEach(function (el) { el.onclick = function () { D.positions.splice(+el.dataset.delp, 1); mount(b); }; });
+      $("#addz", b).onclick = function () { D.zones.push({ nom: "Nouvelle zone", ancien: null, etages: 4, casiers: 6 }); mount(b); };
+      $("#addp", b).onclick = function () { D.positions.push({ nom: "Nouveau côté", ancien: null }); mount(b); };
+      $("#cfgcancel", b).onclick = closeSheet;
+      $("#cfgsave", b).onclick = function () { prepare(b); };
+    }
+    function prepare(b) {
+      var msg = $("#cfgmsg", b);
+      var noms = D.zones.map(function (z) { return (z.nom || "").trim(); }), pos = D.positions.map(function (p) { return (p.nom || "").trim(); });
+      var bad = noms.some(function (n) { return !n; }) || pos.some(function (n) { return !n; }) ? "Chaque zone et chaque côté doit avoir un nom." :
+        new Set(noms).size !== noms.length || new Set(pos).size !== pos.length ? "Deux zones ou deux côtés portent le même nom." :
+        D.zones.some(function (z) { return !(z.etages >= 1 && z.casiers >= 1); }) ? "Chaque zone doit avoir au moins 1 étage et 1 casier." : "";
+      if (bad) { msg.innerHTML = '<div class="confirm">' + esc(bad) + "</div>"; return; }
+      var zMap = {}, pMap = {};
+      D.zones.forEach(function (z, i) { if (z.ancien) zMap[z.ancien] = { nom: noms[i], etages: z.etages, casiers: z.casiers }; });
+      D.positions.forEach(function (p, i) { if (p.ancien) pMap[p.ancien] = pos[i]; });
+      var changes = [], aRanger = 0, aPreciser = 0;
+      S.vins.forEach(function (v) {
+        var d = {}; Object.keys(v).forEach(function (k) { if (k !== "id") d[k] = v[k]; });
+        if (d.zone) {
+          var z = zMap[d.zone];
+          if (!z) { delete d.zone; delete d.position; delete d.etage; delete d.casier; if ((v.stock || 0) > 0) aRanger++; }
+          else {
+            d.zone = z.nom;
+            var lost = false;
+            if (d.etage > z.etages) { delete d.etage; lost = true; }
+            if (d.casier > z.casiers) { delete d.casier; lost = true; }
+            if (lost && (v.stock || 0) > 0) aPreciser++;
+          }
+        }
+        if (d.position) { if (pMap[d.position]) d.position = pMap[d.position]; else delete d.position; }
+        if (JSON.stringify(d) !== JSON.stringify(sansId(v))) changes.push({ id: v.id, d: d });
+      });
+      var cfg = { zones: D.zones.map(function (z, i) { return { nom: noms[i], etages: z.etages, casiers: z.casiers }; }), positions: pos, casiers: S.cfg.casiers || 6 };
+      function go() {
+        $("#cfgsave", b).disabled = true;
+        var i = 0;
+        S.db.doc("config/cave").set(cfg).then(function next() {
+          if (i >= changes.length) { closeSheet(); toast("Cave mise à jour" + (changes.length ? " (" + changes.length + " fiches ajustées)" : "")); return; }
+          var c = changes[i++]; c.d.maj = new Date().toISOString();
+          return S.db.doc("vins/" + c.id).set(c.d).then(next);
+        }).catch(fail);
+      }
+      if (aRanger || aPreciser) {
+        msg.innerHTML = '<div class="confirm"><div>' + (aRanger ? aRanger + " vin(s) en stock passeront « à ranger». " : "") + (aPreciser ? aPreciser + " vin(s) auront un étage ou un casier à préciser." : "") + '</div><div style="display:flex;gap:8px"><button class="btn danger" id="cfgyes">Confirmer</button><button class="btn" id="cfgno">Revenir</button></div></div>';
+        $("#cfgyes", b).onclick = go; $("#cfgno", b).onclick = function () { msg.innerHTML = ""; };
+      } else go();
+    }
+    S.openId = null;
+    openSheet("Configurer la cave", "", mount);
+  }
+  function sansId(v) { var d = {}; Object.keys(v).forEach(function (k) { if (k !== "id") d[k] = v[k]; }); return d; }
+
   function dl(id, field) { var vals = {}; S.vins.forEach(function (v) { if (v[field]) vals[v[field]] = 1; }); return '<datalist id="' + id + '">' + Object.keys(vals).sort().map(function (x) { return '<option value="' + esc(x) + '">'; }).join("") + "</datalist>"; }
 
   function saveForm(v, isNew, btn) {
@@ -539,7 +652,7 @@ form.f { display: grid; gap: 12px }
     d.maj = new Date().toISOString();
     btn.disabled = true;
     var id = isNew ? "v" + Date.now().toString(36) : v.id;
-    var file = $("#f-photo") && $("#f-photo").files[0];
+    var file = S.formPhoto;
     var p = file ? S.assets.upload(file).then(function (a) { d.photo = a.url; d.photoId = a.id; }) : Promise.resolve();
     p.then(function () { return S.db.doc("vins/" + id).set(d); })
       .then(function () { if (isNew && d.stock > 0) return S.db.collection("mouvements").add({ vinId: id, libelle: nom(d) + (d.millesime ? " " + d.millesime : ""), type: "entree", qte: d.stock, motif: "Achat", note: "", date: d.maj, stockApres: d.stock }); })
@@ -575,6 +688,7 @@ form.f { display: grid; gap: 12px }
     var t = e.target.closest("button"); if (!t) return;
     if (t.dataset.open) return openFiche(t.dataset.open);
     if (t.id === "export") return exportCsv();
+    if (t.id === "cfgopen") return openConfig();
     if (t.id === "logout") return window.caveLocal.signOut();
     if (t.id === "legacyyes") return window.caveLocal.sendLegacy().then(function (n) { toast(n + " vins envoyés"); render(); });
     if (t.id === "legacyno") { window.caveLocal.dismissLegacy(); return render(); }
