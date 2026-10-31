@@ -465,9 +465,9 @@ form.f { display: grid; gap: 12px }
 
   // Recherche sur internet pour vérifier qu'un vin existe (nom, appellation, millésime).
   function webQuery(v) { return [v.domaine, v.cuvee, v.appellation, v.millesime].filter(Boolean).join(" ").trim(); }
-  function webLinks(q, id) {
-    var e = encodeURIComponent(q), off = q ? "" : ' aria-disabled="true"';
-    return '<div class="websearch"' + (id ? ' id="' + id + '"' : "") + '><span>Vérifier sur internet :</span><a target="_blank" rel="noopener" href="https://www.google.com/search?q=' + e + '"' + off + '>Google ↗</a><a target="_blank" rel="noopener" href="https://www.vivino.com/search/wines?q=' + e + '"' + off + ">Vivino ↗</a></div>";
+  function webLinks(q, id, label, plusGoogle) {
+    var g = encodeURIComponent(q + (plusGoogle || "")), e = encodeURIComponent(q), off = q ? "" : ' aria-disabled="true"';
+    return '<div class="websearch"' + (id ? ' id="' + id + '"' : "") + '><span>' + (label || "Vérifier sur internet :") + '</span><a target="_blank" rel="noopener" href="https://www.google.com/search?q=' + g + '"' + off + '>Google ↗</a><a target="_blank" rel="noopener" href="https://www.vivino.com/search/wines?q=' + e + '"' + off + ">Vivino ↗</a></div>";
   }
 
   function openFiche(id, keep) {
@@ -487,6 +487,7 @@ form.f { display: grid; gap: 12px }
       var lo = Math.min(v.millesime, y), hi = Math.max(v.boireJusqu, y) + 1, span = hi - lo || 1;
       h += '<div class="bar"><div class="fill" style="left:' + ((v.boireDe - lo) / span * 100) + "%;width:" + ((v.boireJusqu - v.boireDe + 1) / span * 100) + '%"></div><div class="now" style="left:' + ((y - lo + .5) / span * 100) + '%" title="' + y + '"></div></div><div class="scale num"><span>' + lo + "</span><span>" + v.boireDe + "–" + v.boireJusqu + "</span><span>" + hi + "</span></div>";
     }
+    if (webQuery(v)) h += '<div style="margin-top:10px">' + webLinks(webQuery(v), null, "Chercher l'apogée :", " apogée à boire garde") + "</div>";
     if (hasEst(v)) h += '<div class="mvform" style="margin-top:10px"><div><strong>Estimation : à boire de ' + v.estimation.de + " à " + v.estimation.a + "</strong>" + (v.estimation.note ? '<div style="font-size:13px;color:var(--muted)">' + esc(v.estimation.note) + "</div>" : "") + "</div>" +
       (S.canWrite ? '<div style="display:flex;gap:8px"><button class="btn primary" data-est="ok">Valider</button><button class="btn" data-est="no">Ignorer</button></div>' : "") + "</div>";
     h += "</div>";
